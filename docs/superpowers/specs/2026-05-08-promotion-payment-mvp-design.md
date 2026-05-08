@@ -67,7 +67,8 @@ Toss 테스트 결제 팝업
 
 - query param에서 `code`, `message` 읽기
 - 실패/취소 UI 표시
-- CTA: [다시 시도] → `/sell/promote?listingId=xxx`, [건너뛰기] → `/my/listings`
+- `listingId`는 `orderId`(`PROMO-{listingId}-{timestamp}`)에서 파싱
+- CTA: [다시 시도] → `/sell/promote?listingId={파싱된 id}`, [건너뛰기] → `/my/listings`
 
 ## 컴포넌트
 
