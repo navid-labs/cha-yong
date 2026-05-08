@@ -1,40 +1,39 @@
+import Image from "next/image";
+import { marketingImages } from "@/lib/marketing-images";
+
 interface Story {
-  initial: string;
   name: string;
   role: string;
   quote: string;
   vehicle: string;
   savings: string;
-  bgColor: string;
+  image: string;
 }
 
 const STORIES: Story[] = [
   {
-    initial: "김",
     name: "김O진 님",
     role: "IT 개발자, 서울",
     quote: "신차 리스 대비 월 40만원 아끼고 BMW를 탔어요. 에스크로 덕분에 마음 놓였습니다.",
     vehicle: "BMW 320i · 잔여 18개월",
     savings: "월 42만원 절감",
-    bgColor: "#FFB6A0",
+    image: marketingImages.reviewBmw,
   },
   {
-    initial: "박",
     name: "박O수 님",
     role: "스타트업 대표, 성남",
     quote: "법인 중고 리스 세제 혜택 덕분에 현금 흐름이 훨씬 여유로워졌어요.",
     vehicle: "제네시스 G80 · 중고 리스 36개월",
     savings: "월 58만원 절감",
-    bgColor: "#A5C8FF",
+    image: marketingImages.reviewGv80,
   },
   {
-    initial: "이",
     name: "이O영 님",
     role: "프리랜서, 부산",
     quote: "단기 렌트로 비용 부담 없이 신형 전기차를 6개월 써봤습니다.",
     vehicle: "아이오닉 5 · 중고 렌트 6개월",
     savings: "초기비용 0원",
-    bgColor: "#B5E3B5",
+    image: marketingImages.heroHyundai,
   },
 ];
 
@@ -62,14 +61,16 @@ export function CustomerStories() {
               backgroundColor: "var(--chayong-bg)",
             }}
           >
-            <div className="flex items-center gap-3">
-              <span
-                className="flex h-11 w-11 items-center justify-center rounded-full text-base font-bold text-white"
-                style={{ backgroundColor: s.bgColor }}
-                aria-hidden="true"
-              >
-                {s.initial}
-              </span>
+            <div className="relative -mx-2 -mt-2 mb-4 aspect-[16/10] overflow-hidden rounded-xl bg-[var(--chayong-surface)]">
+              <Image
+                src={s.image}
+                alt={`${s.vehicle} 후기 차량`}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 33vw"
+              />
+            </div>
+            <div>
               <div>
                 <p
                   className="text-sm font-semibold"
