@@ -69,7 +69,7 @@ export function PromoteClient({ listingId }: PromoteClientProps) {
 
       if (!prepareRes.ok) {
         router.push(
-          `/sell/promote/fail?message=${encodeURIComponent("결제 준비에 실패했습니다.")}`
+          `/sell/promote/fail?listingId=${listing.id}&message=${encodeURIComponent("결제 준비에 실패했습니다.")}`
         );
         return;
       }
@@ -98,7 +98,7 @@ export function PromoteClient({ listingId }: PromoteClientProps) {
         orderId,
         orderName,
         successUrl: `${window.location.origin}/sell/promote/success`,
-        failUrl: `${window.location.origin}/sell/promote/fail`,
+        failUrl: `${window.location.origin}/sell/promote/fail?listingId=${listing.id}`,
       });
     } catch {
       // 사용자 결제창 취소 등

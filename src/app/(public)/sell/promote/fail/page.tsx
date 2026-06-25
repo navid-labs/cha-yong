@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { XCircle } from "lucide-react";
-import { parseListingIdFromOrderId } from "@/lib/promotion/constants";
 
 export const metadata: Metadata = {
   title: "프로모션 결제 실패",
@@ -19,8 +18,8 @@ export default async function PromoteFailPage({
   const code = typeof params.code === "string" ? params.code : "";
   const message =
     typeof params.message === "string" ? params.message : "결제가 취소되었습니다.";
-  const orderId = typeof params.orderId === "string" ? params.orderId : "";
-  const listingId = parseListingIdFromOrderId(orderId);
+  // promote-client가 failUrl에 listingId를 직접 실어 보낸다(Toss가 code/message를 덧붙임).
+  const listingId = typeof params.listingId === "string" ? params.listingId : null;
 
   return (
     <div className="bg-[var(--chayong-bg)] px-4 py-10 sm:px-6 lg:px-8">

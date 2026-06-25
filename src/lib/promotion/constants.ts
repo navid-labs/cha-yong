@@ -46,12 +46,3 @@ export function resolvePromotionAmount(
     amount: getPromotionPrice(tierId, duration),
   };
 }
-
-export function buildOrderId(listingId: string): string {
-  return `PROMO-${listingId}-${Date.now()}`;
-}
-
-export function parseListingIdFromOrderId(orderId: string): string | null {
-  const match = orderId.match(/^PROMO-(.+)-\d+$/);
-  return match?.[1] ?? null;
-}
