@@ -3,6 +3,7 @@ import { NotificationType } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { requireActiveProfile, isAuthError } from "@/lib/api/auth-guard";
 import { sendBulkNotifications } from "@/lib/notifications/send";
+import { verifyTossPayment } from "@/lib/payment/toss";
 
 // POST /api/payment/confirm
 // Called after PG (Toss Payments) callback — verify then update escrow status
@@ -38,9 +39,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // When pgPaymentKey and pgOrderId are present, verify with Toss Payments API.
-    // In test mode they are omitted and we skip PG verification.
-    // TODO: call verifyTossPayment(pgPaymentKey, pgOrderId, existing.totalAmount) in production
+    // 위변조 방지 게이트: 검증 가능 여부를 "클라 입력(pgPaymentKey 유무)"이 아니라
+    // "서버 상태(TOSS_SECRET 존재)"로 판단한다. 그래야 클라가 PG 증빙을 생략해
+    // 검증을 우회하는 공격을 막을 수 있다.
+    const hasSecret = Boolean(process.env.TOSS_SECRET);
+
+    if (hasSecret) {
+      // 운영: Toss 서버 승인 검증을 반드시 통과해야 PAID로 전이한다.
+      if (!pgPaymentKey || !pgOrderId) {
+        return NextResponse.json(
+          { error: "결제 승인 정보가 없습니다." },
+          { status: 400 }
+        );
+      }
+      try {
+        await verifyTossPayment({
+          paymentKey: pgPaymentKey,
+          orderId: paymentId,
+          amount: existing.totalAmount,
+        });
+      } catch {
+        return NextResponse.json(
+          { error: "결제 검증에 실패했습니다." },
+          { status: 402 }
+        );
+      }
+    } else if (pgPaymentKey || pgOrderId) {
+      // fail-closed: 검증 수단(TOSS_SECRET) 없이 PG 증빙이 들어오면 거절한다.
+      return NextResponse.json(
+        { error: "결제 검증을 수행할 수 없습니다." },
+        { status: 400 }
+      );
+    }
+    // TOSS_SECRET 없음 + PG 증빙 없음 = 개발/테스트 모드: PG 검증 스킵.
 
     const paidAt = new Date();
     const updated = await prisma.$transaction(async (tx) => {
