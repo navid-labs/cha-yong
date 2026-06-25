@@ -51,10 +51,22 @@ export async function GET(request: NextRequest) {
           ? { monthlyPayment: "desc" as const }
           : { createdAt: "desc" as const };
 
+    // 만료 프로모션 정리(lazy sweep): 지난 노출 매물의 가중치를 비워 정렬을 정확히 유지.
+    // 매 목록 조회마다 1회 인덱스 UPDATE(대개 0행) — 추후 cron으로 대체 예정.
+    await prisma.listing.updateMany({
+      where: { promotedUntil: { lte: new Date() } },
+      data: { promotedUntil: null, promotionTier: null },
+    });
+
     const [listings, total] = await Promise.all([
       prisma.listing.findMany({
         where,
-        orderBy: [{ isVerified: "desc" }, orderBy],
+        // 활성 프로모션 매물을 상단에. 만료분은 sweep으로 null 처리되어 nulls last로 밀린다.
+        orderBy: [
+          { promotedUntil: { sort: "desc", nulls: "last" } },
+          { isVerified: "desc" },
+          orderBy,
+        ],
         skip: (page - 1) * perPage,
         take: perPage,
         include: {
@@ -76,6 +88,7 @@ export async function GET(request: NextRequest) {
       initialCost: listing.initialCost,
       remainingMonths: listing.remainingMonths,
       isVerified: listing.isVerified,
+      promotionTier: listing.promotionTier,
       accidentCount: listing.accidentCount,
       mileageVerified: listing.mileageVerified,
       viewCount: listing.viewCount,
