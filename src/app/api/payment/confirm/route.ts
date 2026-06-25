@@ -70,14 +70,14 @@ export async function POST(request: NextRequest) {
         type: NotificationType.ESCROW_PAID,
         title: "결제가 완료되었습니다",
         message: "명의변경 절차를 진행하세요.",
-        linkUrl: `/payment/${paymentId}`,
+        linkUrl: `/escrow/${paymentId}`,
       },
       {
         userId: existing.sellerId,
         type: NotificationType.ESCROW_PAID,
         title: "구매 결제가 완료되었습니다",
         message: "명의변경 안내를 확인하세요.",
-        linkUrl: `/payment/${paymentId}`,
+        linkUrl: `/escrow/${paymentId}`,
       },
     ]);
 

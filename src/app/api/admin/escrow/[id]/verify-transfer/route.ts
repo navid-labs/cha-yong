@@ -106,14 +106,14 @@ export async function POST(
           type: NotificationType.ESCROW_RELEASED,
           title: "명의변경이 확인되었습니다",
           message: "명의변경 증빙 검증이 완료되었습니다.",
-          linkUrl: `/payment/${id}`,
+          linkUrl: `/escrow/${id}`,
         },
         {
           userId: current.sellerId,
           type: NotificationType.ESCROW_RELEASED,
           title: "대금이 정산됩니다",
           message: "명의변경 검증이 완료되어 대금 정산을 진행합니다.",
-          linkUrl: `/payment/${id}`,
+          linkUrl: `/escrow/${id}`,
         },
       ]);
 
@@ -145,14 +145,14 @@ export async function POST(
         type: NotificationType.ESCROW_DISPUTE_OPENED,
         title: "명의변경 증빙 확인이 필요합니다",
         message: data.rejectionReason ?? "명의변경 증빙이 반려되었습니다.",
-        linkUrl: `/payment/${id}`,
+        linkUrl: `/escrow/${id}`,
       },
       {
         userId: current.sellerId,
         type: NotificationType.ESCROW_DISPUTE_OPENED,
         title: "명의변경 증빙 확인이 필요합니다",
         message: data.rejectionReason ?? "명의변경 증빙이 반려되었습니다.",
-        linkUrl: `/payment/${id}`,
+        linkUrl: `/escrow/${id}`,
       },
     ]);
 
