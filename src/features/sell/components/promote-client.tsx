@@ -10,11 +10,7 @@ import {
 } from "./promotion-tier-selector";
 import { PaymentSummary } from "./payment-summary";
 import { PromoteActions } from "./promote-actions";
-import {
-  PROMOTION_TIERS,
-  getPromotionPrice,
-  buildOrderId,
-} from "@/lib/promotion/constants";
+import { PROMOTION_TIERS, getPromotionPrice } from "@/lib/promotion/constants";
 
 interface ListingData {
   id: string;
@@ -60,27 +56,47 @@ export function PromoteClient({ listingId }: PromoteClientProps) {
     setPaying(true);
 
     try {
+      // 서버가 금액을 산정하고 Promotion(PENDING)을 만든다. 그 id가 PG 주문번호.
+      const prepareRes = await fetch("/api/promotion/prepare", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          listingId: listing.id,
+          tier: selection.tierId,
+          durationDays: selection.duration,
+        }),
+      });
+
+      if (!prepareRes.ok) {
+        router.push(
+          `/sell/promote/fail?message=${encodeURIComponent("결제 준비에 실패했습니다.")}`
+        );
+        return;
+      }
+
+      const { id: orderId, amount: serverAmount } = await prepareRes.json();
+      const orderName = `${tierName} · ${selection.duration}일`;
+
       const clientKey = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const TossPayments = (window as any).TossPayments;
 
       if (!clientKey || !TossPayments) {
-        const orderId = buildOrderId(listing.id);
+        // 테스트 모드: SDK/키 없으면 바로 success로 — 서버 confirm이 검증을 스킵하고 활성화.
         router.push(
-          `/sell/promote/success?orderId=${orderId}&amount=${amount}&orderName=${encodeURIComponent(`${tierName} · ${selection.duration}일`)}`
+          `/sell/promote/success?orderId=${orderId}&amount=${serverAmount}&orderName=${encodeURIComponent(orderName)}`
         );
         return;
       }
 
       const tossPayments = TossPayments(clientKey);
       const payment = await tossPayments.payment({ customerKey: "ANONYMOUS" });
-      const orderId = buildOrderId(listing.id);
 
       await payment.requestPayment({
         method: "CARD",
-        amount: { currency: "KRW", value: amount },
+        amount: { currency: "KRW", value: serverAmount },
         orderId,
-        orderName: `${tierName} · ${selection.duration}일`,
+        orderName,
         successUrl: `${window.location.origin}/sell/promote/success`,
         failUrl: `${window.location.origin}/sell/promote/fail`,
       });
@@ -89,7 +105,7 @@ export function PromoteClient({ listingId }: PromoteClientProps) {
     } finally {
       setPaying(false);
     }
-  }, [selection, listing, amount, tierName, router]);
+  }, [selection, listing, tierName, router]);
 
   // Toss SDK 스크립트 로드
   useEffect(() => {

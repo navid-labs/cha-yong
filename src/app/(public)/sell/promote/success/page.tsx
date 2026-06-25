@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CheckCircle } from "lucide-react";
+import { PromotionConfirm } from "@/features/sell/components/promotion-confirm";
 
 export const metadata: Metadata = {
   title: "프로모션 결제 완료",
@@ -21,6 +22,10 @@ export default async function PromoteSuccessPage({
       : "프로모션";
   const amount =
     typeof params.amount === "string" ? Number(params.amount) : 0;
+  // Toss는 successUrl에 orderId(=Promotion.id)·paymentKey를 붙여 리다이렉트한다.
+  const orderId = typeof params.orderId === "string" ? params.orderId : "";
+  const paymentKey =
+    typeof params.paymentKey === "string" ? params.paymentKey : undefined;
 
   return (
     <div className="bg-[var(--chayong-bg)] px-4 py-10 sm:px-6 lg:px-8">
@@ -77,6 +82,10 @@ export default async function PromoteSuccessPage({
           >
             프로모션이 적용되면 매물이 더 많은 구매자에게 노출됩니다.
           </p>
+
+          {orderId && (
+            <PromotionConfirm promotionId={orderId} paymentKey={paymentKey} />
+          )}
 
           <div className="mt-6 flex w-full gap-3">
             <Link
