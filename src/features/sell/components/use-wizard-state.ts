@@ -20,7 +20,6 @@ export interface WizardForm {
   color: string;
   capitalCompany: string;
   options: string[];
-  imageUrls: string[];
 }
 
 const INITIAL: WizardForm = {
@@ -32,7 +31,6 @@ const INITIAL: WizardForm = {
   color: "",
   capitalCompany: "",
   options: [],
-  imageUrls: [],
 };
 
 interface UseWizardStateOptions {
