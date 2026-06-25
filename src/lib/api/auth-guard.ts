@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getSession, getProfile } from "@/lib/supabase/auth";
+import { getProfile } from "@/lib/supabase/auth";
 import { prisma } from "@/lib/db/prisma";
 import type { UserRole } from "@prisma/client";
 
@@ -12,14 +12,9 @@ export type AuthResult = {
  * Require authenticated user. Returns userId and role, or a 401 response.
  */
 export async function requireAuth(): Promise<AuthResult | NextResponse> {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
-  }
-
   const profile = await getProfile();
   if (!profile) {
-    return NextResponse.json({ error: "프로필을 찾을 수 없습니다." }, { status: 401 });
+    return NextResponse.json({ error: "인증이 필요합니다." }, { status: 401 });
   }
 
   return { userId: profile.id, role: profile.role };

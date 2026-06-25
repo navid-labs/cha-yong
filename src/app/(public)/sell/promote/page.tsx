@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/supabase/auth";
+import { getUser } from "@/lib/supabase/auth";
 import { PromoteClient } from "@/features/sell/components/promote-client";
 
 export const metadata: Metadata = {
@@ -15,11 +15,11 @@ export default async function SellPromotePage({
 }: {
   searchParams: SearchParams;
 }) {
-  const [session, params] = await Promise.all([getSession(), searchParams]);
+  const [user, params] = await Promise.all([getUser(), searchParams]);
   const listingId =
     typeof params.listingId === "string" ? params.listingId : "";
 
-  if (!session) {
+  if (!user) {
     redirect(
       `/login?redirect=${encodeURIComponent(`/sell/promote?listingId=${listingId}`)}`
     );

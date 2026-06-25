@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/supabase/auth";
+import { getUser } from "@/lib/supabase/auth";
 import { SellNewClient } from "@/features/sell/components/sell-new-client";
 
 export const metadata: Metadata = {
@@ -15,10 +15,10 @@ export default async function SellNewPage({
 }: {
   searchParams: SearchParams;
 }) {
-  const [session, params] = await Promise.all([getSession(), searchParams]);
+  const [user, params] = await Promise.all([getUser(), searchParams]);
   const manual = params.manual === "1";
 
-  if (!session) {
+  if (!user) {
     redirect("/signup?role=SELLER&redirect=/sell/new");
   }
 
