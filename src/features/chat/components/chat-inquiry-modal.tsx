@@ -3,6 +3,11 @@
 import type React from "react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ChatMessageArea } from "@/features/chat/components/chat-message-area";
 import { ShieldCheck, X } from "lucide-react";
 
@@ -64,6 +69,12 @@ export function ChatInquiryModal({
       if (params.has("chatRoom")) {
         router.replace(`/detail/${listingId}`);
       }
+    }
+  }
+
+  function handleOpenChange(nextOpen: boolean) {
+    if (!nextOpen) {
+      closeChat();
     }
   }
 
@@ -137,78 +148,71 @@ export function ChatInquiryModal({
         </p>
       )}
 
-      {isOpen && roomId && currentUserId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6">
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/45 backdrop-blur-[2px]"
-            onClick={closeChat}
-            aria-label="채팅 닫기"
-          />
-
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-label={`${listingName} 채팅`}
-            className="relative z-10 flex h-[min(760px,calc(100dvh-1.5rem))] w-full max-w-2xl flex-col overflow-hidden rounded-2xl shadow-2xl ring-1 ring-black/10 sm:h-[min(760px,calc(100dvh-3rem))]"
-            style={{ backgroundColor: "var(--chayong-bg)" }}
+      <Dialog
+        open={isOpen && Boolean(roomId) && Boolean(currentUserId)}
+        onOpenChange={handleOpenChange}
+      >
+        <DialogContent
+          className="grid h-[calc(100dvh-2rem)] max-h-[calc(100dvh-2rem)] grid-rows-[auto_auto_minmax(0,1fr)] gap-0 overflow-hidden p-0 sm:max-w-2xl"
+          showCloseButton={false}
+        >
+          <header
+            className="flex min-w-0 items-center gap-3 border-b px-4 py-3"
+            style={{
+              backgroundColor: "var(--chayong-bg)",
+              borderColor: "var(--chayong-divider)",
+            }}
           >
-            <header
-              className="flex items-center gap-3 border-b px-4 py-3"
-              style={{
-                backgroundColor: "var(--chayong-bg)",
-                borderColor: "var(--chayong-divider)",
-              }}
+            <button
+              type="button"
+              onClick={closeChat}
+              className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full transition-colors hover:bg-[var(--chayong-surface-hover)]"
+              style={{ color: "var(--chayong-text)" }}
+              aria-label="채팅 닫기"
             >
-              <button
-                type="button"
-                onClick={closeChat}
-                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full transition-colors hover:bg-[var(--chayong-surface-hover)]"
+              <X size={20} />
+            </button>
+
+            <div className="min-w-0 flex-1">
+              <DialogTitle
+                className="truncate text-sm font-bold leading-5"
                 style={{ color: "var(--chayong-text)" }}
-                aria-label="채팅 닫기"
               >
-                <X size={20} />
-              </button>
-
-              <div className="min-w-0 flex-1">
-                <p
-                  className="truncate text-sm font-bold"
-                  style={{ color: "var(--chayong-text)" }}
-                >
-                  {listingName}
-                </p>
-                <p
-                  className="text-xs"
-                  style={{ color: "var(--chayong-text-caption)" }}
-                >
-                  월 {monthlyPayment.toLocaleString("ko-KR")}원
-                </p>
-              </div>
-            </header>
-
-            <div
-              className="flex items-center gap-2 px-4 py-2.5 text-xs"
-              style={{
-                backgroundColor: "#FFFBEB",
-                borderBottom: "1px solid #FDE68A",
-                color: "#92400E",
-              }}
-            >
-              <ShieldCheck size={14} style={{ flexShrink: 0 }} />
-              <span>
-                안전거래 시 보호됩니다. 플랫폼 외 거래로 인한 문제는 보호되지
-                않습니다.
-              </span>
+                {listingName}
+              </DialogTitle>
+              <p
+                className="text-xs"
+                style={{ color: "var(--chayong-text-caption)" }}
+              >
+                월 {monthlyPayment.toLocaleString("ko-KR")}원
+              </p>
             </div>
+          </header>
 
+          <div
+            className="flex min-w-0 items-center gap-2 px-4 py-2.5 text-xs"
+            style={{
+              backgroundColor: "#FFFBEB",
+              borderBottom: "1px solid #FDE68A",
+              color: "#92400E",
+            }}
+          >
+            <ShieldCheck size={14} style={{ flexShrink: 0 }} />
+            <span className="min-w-0 break-words">
+              안전거래 시 보호됩니다. 플랫폼 외 거래로 인한 문제는 보호되지
+              않습니다.
+            </span>
+          </div>
+
+          {roomId && currentUserId ? (
             <ChatMessageArea
               roomId={roomId}
               currentUserId={currentUserId}
               initialMessages={messages}
             />
-          </section>
-        </div>
-      )}
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }

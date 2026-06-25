@@ -19,6 +19,36 @@ interface Message {
   createdAt: string;
 }
 
+/** Raw Postgres row delivered by Supabase Realtime (snake_case columns). */
+export interface RawMessageRow {
+  id: string;
+  chat_room_id: string;
+  sender_id: string;
+  type: "TEXT" | "IMAGE" | "SYSTEM";
+  content: string;
+  image_url?: string | null;
+  is_read: boolean;
+  review_status?: string;
+  block_reason?: string | null;
+  created_at: string;
+}
+
+/** Maps a Realtime snake_case row to the camelCase Message used by the UI. */
+export function mapRealtimeMessage(row: RawMessageRow): Message {
+  return {
+    id: row.id,
+    chatRoomId: row.chat_room_id,
+    senderId: row.sender_id,
+    type: row.type,
+    content: row.content,
+    imageUrl: row.image_url ?? null,
+    isRead: row.is_read,
+    reviewStatus: row.review_status,
+    blockReason: row.block_reason ?? null,
+    createdAt: row.created_at,
+  };
+}
+
 interface ChatMessageAreaProps {
   roomId: string;
   currentUserId: string;
@@ -74,11 +104,17 @@ export function ChatMessageArea({
           filter: `chat_room_id=eq.${roomId}`,
         },
         (payload) => {
-          const newMessage = payload.new as Message;
+          const incoming = mapRealtimeMessage(payload.new as RawMessageRow);
+          // 서버 GET과 동일한 가시성 규칙: 승인됐거나 본인 발신한 메시지만 노출.
+          const visible =
+            incoming.reviewStatus == null ||
+            incoming.reviewStatus === "APPROVED" ||
+            incoming.senderId === currentUserId;
+          if (!visible) return;
           // Deduplicate: skip if already added via optimistic update
           setMessages((prev) => {
-            if (prev.some((m) => m.id === newMessage.id)) return prev;
-            return [...prev, newMessage];
+            if (prev.some((m) => m.id === incoming.id)) return prev;
+            return [...prev, incoming];
           });
         }
       )
@@ -87,7 +123,7 @@ export function ChatMessageArea({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [roomId]);
+  }, [roomId, currentUserId]);
 
   // Mark messages as read when entering the room
   useEffect(() => {
@@ -187,9 +223,9 @@ export function ChatMessageArea({
   };
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {/* Message list */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto overflow-x-hidden px-4 py-4">
         {messages.length === 0 && (
           <p
             className="text-center text-sm py-8"
@@ -202,9 +238,9 @@ export function ChatMessageArea({
         {messages.map((msg) => {
           if (msg.type === "SYSTEM") {
             return (
-              <div key={msg.id} className="flex justify-center">
+              <div key={msg.id} className="flex min-w-0 justify-center">
                 <span
-                  className="rounded-full px-3 py-1 text-xs"
+                  className="max-w-full rounded-full px-3 py-1 text-xs break-words"
                   style={{
                     backgroundColor: "#FFF9EC",
                     color: "#7A5A00",
@@ -223,7 +259,7 @@ export function ChatMessageArea({
           return (
             <div
               key={msg.id}
-              className={`group flex items-end gap-2 ${isMine ? "flex-row-reverse" : "flex-row"}`}
+              className={`group flex min-w-0 items-end gap-2 ${isMine ? "flex-row-reverse" : "flex-row"}`}
             >
               {/* Avatar (only for received) */}
               {!isMine && (
@@ -237,9 +273,11 @@ export function ChatMessageArea({
               )}
 
               <div
-                className={`flex flex-col gap-1 ${isMine ? "items-end" : "items-start"}`}
+                className={`flex min-w-0 flex-1 flex-col gap-1 ${isMine ? "items-end" : "items-start"}`}
               >
-                <div className="flex items-end gap-2">
+                <div
+                  className={`flex min-w-0 items-end gap-2 ${isMine ? "justify-end" : "justify-start"}`}
+                >
                   {!isMine && (
                     <button
                       type="button"
@@ -249,7 +287,7 @@ export function ChatMessageArea({
                           summary: reportSummary,
                         })
                       }
-                      className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border border-[var(--chayong-divider)] bg-[var(--chayong-surface)] text-[var(--chayong-text-caption)] opacity-0 shadow-sm transition-all duration-150 hover:bg-[var(--chayong-bg)] hover:text-[var(--chayong-primary)] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--chayong-primary)] focus-visible:ring-offset-2 active:scale-95 group-hover:opacity-100 group-focus-within:opacity-100 group-active:opacity-100"
+                      className="hidden h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border border-[var(--chayong-divider)] bg-[var(--chayong-surface)] text-[var(--chayong-text-caption)] opacity-0 shadow-sm transition-all duration-150 hover:bg-[var(--chayong-bg)] hover:text-[var(--chayong-primary)] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--chayong-primary)] focus-visible:ring-offset-2 active:scale-95 group-hover:opacity-100 group-focus-within:opacity-100 group-active:opacity-100 sm:flex"
                       aria-label="메시지 신고"
                     >
                       <Flag size={12} />
@@ -257,7 +295,7 @@ export function ChatMessageArea({
                   )}
 
                   <div
-                    className="max-w-xs rounded-2xl px-4 py-2.5 text-sm leading-relaxed break-words lg:max-w-md"
+                    className="max-w-[min(72vw,20rem)] rounded-2xl px-4 py-2.5 text-sm leading-relaxed break-words sm:max-w-xs lg:max-w-md"
                     style={
                       isMine
                         ? {
@@ -301,7 +339,7 @@ export function ChatMessageArea({
       {/* Warning toast */}
       {warning && (
         <div
-          className="mx-4 mb-2 rounded-lg px-3 py-2 text-xs font-medium"
+          className="mx-4 mb-2 rounded-lg px-3 py-2 text-xs font-medium break-words"
           style={{
             backgroundColor: "#FFF3F3",
             color: "var(--chayong-danger)",
@@ -315,7 +353,7 @@ export function ChatMessageArea({
 
       {/* Input bar */}
       <div
-        className="flex items-end gap-2 border-t px-4 py-3"
+        className="flex min-w-0 flex-shrink-0 items-end gap-2 overflow-hidden border-t px-3 py-3 sm:px-4"
         style={{ borderColor: "var(--chayong-divider)" }}
       >
         {/* Image button (placeholder) */}
@@ -339,7 +377,7 @@ export function ChatMessageArea({
           onKeyDown={handleKeyDown}
           placeholder="메시지를 입력하세요"
           rows={1}
-          className="flex-1 resize-none rounded-2xl px-4 py-2.5 text-sm outline-none transition-colors"
+          className="min-w-0 flex-1 resize-none rounded-2xl px-4 py-2.5 text-sm outline-none transition-colors"
           style={{
             backgroundColor: "var(--chayong-surface)",
             color: "var(--chayong-text)",
