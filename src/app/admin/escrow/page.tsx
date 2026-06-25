@@ -75,6 +75,7 @@ export default async function AdminEscrowPage({
     totalAmount: e.totalAmount,
     paidAt: e.paidAt?.toISOString() ?? null,
     createdAt: e.createdAt.toISOString(),
+    transferProofKey: e.transferProofKey,
     listing: e.listing,
     buyer: e.buyer,
     seller: e.seller,

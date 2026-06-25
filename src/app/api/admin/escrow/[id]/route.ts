@@ -3,10 +3,12 @@ import { prisma } from "@/lib/db/prisma";
 import { requireRole, isAuthError } from "@/lib/api/auth-guard";
 import type { EscrowStatus } from "@prisma/client";
 
-// Valid state transitions for the escrow state machine
+// Valid state transitions for the escrow state machine.
+// 정산(RELEASED)은 증빙 검증 경로(verify-transfer)로만 가능하다. 단순 PATCH로는
+// PAID에서 환불(REFUNDED)만 허용하고, 분쟁 해소(DISPUTED→RELEASED/REFUNDED)는 유지.
 const VALID_TRANSITIONS: Record<EscrowStatus, EscrowStatus[]> = {
   PENDING: ["PAID"],
-  PAID: ["RELEASED", "REFUNDED"],
+  PAID: ["REFUNDED"],
   RELEASED: [],
   REFUNDED: [],
   DISPUTED: ["RELEASED", "REFUNDED"],

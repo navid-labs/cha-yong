@@ -124,6 +124,9 @@ export async function POST(
       const escrow = await tx.escrowPayment.update({
         where: { id },
         data: {
+          // 반려는 분쟁 상태로 전이한다(ESCROW_DISPUTE_OPENED 알림과 정합).
+          // 이후 해소는 관리자 PATCH(DISPUTED→RELEASED/REFUNDED)로 처리.
+          status: "DISPUTED",
           verificationRejectedAt: now,
           rejectionReason: data.rejectionReason,
           rejectionProofKey: data.rejectionProofKey,
