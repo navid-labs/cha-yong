@@ -6,6 +6,7 @@ import { EscrowStatus } from "@prisma/client";
 
 import { prisma } from "@/lib/db/prisma";
 import { getProfile } from "@/lib/supabase/auth";
+import { canViewEscrow } from "@/lib/payment/escrow";
 import { BUCKET, createSignedKeyUrl } from "@/lib/supabase/storage";
 import { formatKRW, formatDate } from "@/lib/utils/format";
 import { TransferProofUpload } from "@/features/payment/components/transfer-proof-upload";
@@ -51,12 +52,11 @@ export default async function EscrowDetailPage({ params }: PageProps) {
 
   if (!escrow) notFound();
 
+  // Don't leak existence to unrelated users.
+  if (!canViewEscrow(profile, escrow)) notFound();
+
   const isBuyer = escrow.buyerId === profile.id;
   const isSeller = escrow.sellerId === profile.id;
-  const isAdmin = profile.role === "ADMIN";
-
-  // Don't leak existence to unrelated users.
-  if (!isBuyer && !isSeller && !isAdmin) notFound();
 
   let signedProofUrl: string | null = null;
   if (escrow.transferProofKey) {
