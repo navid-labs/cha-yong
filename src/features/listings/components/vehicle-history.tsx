@@ -28,10 +28,6 @@ function buildSummaryChips(ownerCount: number, accidentCount: number): SummaryCh
       label: accidentFree ? "무사고" : `사고 ${accidentCount}회`,
       tone: accidentFree ? "success" : "danger",
     },
-    {
-      label: accidentFree ? "특이 이력 없음" : "사고 이력 확인 필요",
-      tone: accidentFree ? "success" : "danger",
-    },
   ];
 }
 
@@ -54,27 +50,27 @@ function buildHistoryItems(ownerCount: number, accidentCount: number): HistoryIt
     },
     {
       label: "침수 이력",
-      value: "없음",
-      tone: "success",
-      note: "침수 기록 없음",
+      value: "미조회",
+      tone: "neutral",
+      note: "공식 조회 연동 전",
     },
     {
       label: "도난 이력",
-      value: "없음",
-      tone: "success",
-      note: "도난 기록 없음",
+      value: "미조회",
+      tone: "neutral",
+      note: "공식 조회 연동 전",
     },
     {
       label: "전손 이력",
-      value: "없음",
-      tone: "success",
-      note: "전손 기록 없음",
+      value: "미조회",
+      tone: "neutral",
+      note: "공식 조회 연동 전",
     },
     {
       label: "용도변경",
-      value: "확인 완료",
-      tone: "success",
-      note: "용도 변경 이력 없음",
+      value: "미조회",
+      tone: "neutral",
+      note: "공식 조회 연동 전",
     },
   ];
 }
@@ -161,6 +157,10 @@ export function VehicleHistory({ ownerCount, accidentCount }: VehicleHistoryProp
           ))}
         </div>
       </div>
+
+      <p className="text-xs leading-5" style={{ color: "var(--chayong-text-caption)" }}>
+        침수·도난·전손 이력은 공식 조회 연동 전이라 미확인 상태입니다.
+      </p>
     </section>
   );
 }

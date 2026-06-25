@@ -16,6 +16,7 @@ interface ListingCtaSidebarProps {
   listingName?: string;
   initialChatRoom?: InitialChatRoom;
   initialFavoriteCount?: number;
+  isVerified?: boolean;
 }
 
 function formatInitialCost(initialCost: number) {
@@ -38,6 +39,7 @@ export function ListingCtaSidebar({
   listingName = "매물",
   initialChatRoom,
   initialFavoriteCount = 0,
+  isVerified = false,
 }: ListingCtaSidebarProps) {
   const { isFavorited, count, loading, toggle } = useFavorite(listingId, initialFavoriteCount);
   const estimatedTotalPayment = Math.max(0, monthlyPayment) * Math.max(0, remainingMonths);
@@ -54,12 +56,21 @@ export function ListingCtaSidebar({
       style={{ borderColor: "var(--chayong-border)", backgroundColor: "var(--chayong-bg)" }}
     >
       <div className="mb-4 flex flex-wrap gap-2">
-        <span
-          className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold"
-          style={{ backgroundColor: "var(--chayong-primary-light)", color: "var(--chayong-primary)" }}
-        >
-          검수완료
-        </span>
+        {isVerified ? (
+          <span
+            className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold"
+            style={{ backgroundColor: "var(--chayong-primary-light)", color: "var(--chayong-primary)" }}
+          >
+            검수완료
+          </span>
+        ) : (
+          <span
+            className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold"
+            style={{ backgroundColor: "var(--chayong-surface)", color: "var(--chayong-text-caption)" }}
+          >
+            검수 대기
+          </span>
+        )}
         <span
           className="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold"
           style={{ backgroundColor: "#e0f2fe", color: "#0369a1" }}

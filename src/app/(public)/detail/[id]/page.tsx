@@ -253,6 +253,7 @@ export default async function DetailPage({ params, searchParams }: PageProps) {
             remainingMonths={listing.remainingMonths}
             listingId={listing.id}
             listingName={vehicleName}
+            isVerified={listing.isVerified}
             initialChatRoom={
               initialChatRoom
                 ? {
