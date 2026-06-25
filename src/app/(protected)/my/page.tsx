@@ -1,35 +1,60 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { getProfile } from "@/lib/supabase/auth";
+import { prisma } from "@/lib/db/prisma";
 import { MyDashboard } from "@/features/my/components/my-dashboard";
-import type { ListingCardData } from "@/types";
 
 export const metadata: Metadata = {
   title: "마이페이지",
   description: "내 매물, 찜한 매물, 거래 내역을 확인하세요.",
 };
 
-// TODO: Replace with real auth once Supabase session is wired up
-async function getMockProfile() {
-  return {
-    name: "",
-    role: "SELLER",
-    listingCount: 0,
-    chatCount: 0,
-    activeTransactionCount: 0,
-  };
-}
+export const dynamic = "force-dynamic";
 
 export default async function MyPage() {
-  const profile = await getMockProfile();
+  const profile = await getProfile();
+  if (!profile) redirect("/login");
 
-  // TODO: Fetch real listings and favorites after auth integration
-  const myListings: never[] = [];
-  const favorites: ListingCardData[] = [];
+  const [listingCount, chatCount, activeTransactionCount, myListings] =
+    await Promise.all([
+      prisma.listing.count({ where: { sellerId: profile.id } }),
+      prisma.chatRoom.count({
+        where: {
+          isActive: true,
+          OR: [{ buyerId: profile.id }, { sellerId: profile.id }],
+        },
+      }),
+      prisma.escrowPayment.count({
+        where: {
+          status: { in: ["PENDING", "PAID"] },
+          OR: [{ buyerId: profile.id }, { sellerId: profile.id }],
+        },
+      }),
+      prisma.listing.findMany({
+        where: { sellerId: profile.id },
+        select: {
+          id: true,
+          brand: true,
+          model: true,
+          year: true,
+          monthlyPayment: true,
+          status: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: "desc" },
+      }),
+    ]);
 
   return (
     <MyDashboard
-      profile={profile}
+      profile={{
+        name: profile.name ?? "",
+        role: profile.role,
+        listingCount,
+        chatCount,
+        activeTransactionCount,
+      }}
       myListings={myListings}
-      favorites={favorites}
     />
   );
 }
