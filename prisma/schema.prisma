@@ -62,6 +62,18 @@ enum EscrowStatus {
   DISPUTED // 분쟁중
 }
 
+enum PromotionTier {
+  TOP_EXPOSURE // 목록 상단 노출
+  HOME_FEATURED // 홈 추천 구좌
+}
+
+enum PromotionStatus {
+  PENDING // 결제 대기
+  ACTIVE // 노출중
+  EXPIRED // 기간 만료
+  CANCELLED // 취소/환불
+}
+
 enum NotificationType {
   CHAT_MESSAGE
   ESCROW_STATUS // deprecated: 신규 row 발행 금지
@@ -141,41 +153,42 @@ enum ImagePosition {
 // ─── Models ──────────────────────────────────────────────
 
 model Profile {
-  id               String       @id @db.Uuid
-  email            String       @unique
-  name             String?
-  phone            String?
-  role             UserRole     @default(BUYER)
-  avatarUrl        String?      @map("avatar_url")
-  violationCount   Int          @default(0) @map("violation_count")
-  penaltyLevel     PenaltyLevel @default(NONE) @map("penalty_level")
-  suspendedUntil   DateTime?    @map("suspended_until")
-  suspensionReason String?      @map("suspension_reason")
-  bannedAt         DateTime?    @map("banned_at")
-  lastViolationAt  DateTime?    @map("last_violation_at")
+  id                String       @id @db.Uuid
+  email             String       @unique
+  name              String?
+  phone             String?
+  role              UserRole     @default(BUYER)
+  avatarUrl         String?      @map("avatar_url")
+  violationCount    Int          @default(0) @map("violation_count")
+  penaltyLevel      PenaltyLevel @default(NONE) @map("penalty_level")
+  suspendedUntil    DateTime?    @map("suspended_until")
+  suspensionReason  String?      @map("suspension_reason")
+  bannedAt          DateTime?    @map("banned_at")
+  lastViolationAt   DateTime?    @map("last_violation_at")
   // Auth provider tracking (social login)
-  authProvider      String?   @map("auth_provider")
-  termsAcceptedAt   DateTime? @map("terms_accepted_at")
-  privacyAcceptedAt DateTime? @map("privacy_accepted_at")
-  marketingOptIn    Boolean   @default(false) @map("marketing_opt_in")
-  marketingOptInAt  DateTime? @map("marketing_opt_in_at")
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @updatedAt @map("updated_at")
+  authProvider      String?      @map("auth_provider")
+  termsAcceptedAt   DateTime?    @map("terms_accepted_at")
+  privacyAcceptedAt DateTime?    @map("privacy_accepted_at")
+  marketingOptIn    Boolean      @default(false) @map("marketing_opt_in")
+  marketingOptInAt  DateTime?    @map("marketing_opt_in_at")
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
 
   // Relations
-  sellerListings  Listing[]          @relation("SellerListings")
-  buyerChats      ChatRoom[]         @relation("BuyerChats")
-  sellerChats     ChatRoom[]         @relation("SellerChats")
-  sentMessages    ChatMessage[]      @relation("SentMessages")
-  userLeads       ConsultationLead[] @relation("UserLeads")
-  assignedLeads   ConsultationLead[] @relation("AssignedLeads")
-  buyerPayments   EscrowPayment[]    @relation("BuyerPayments")
-  sellerPayments  EscrowPayment[]    @relation("SellerPayments")
-  favorites       Favorite[]         @relation("UserFavorites")
-  notifications   Notification[]     @relation("UserNotifications")
-  reviewsWritten  DealerReview[]     @relation("ReviewsWritten")
-  reviewsReceived DealerReview[]     @relation("ReviewsReceived")
-  reportsFiled    Report[]           @relation("ReportsFiled")
+  sellerListings   Listing[]          @relation("SellerListings")
+  buyerChats       ChatRoom[]         @relation("BuyerChats")
+  sellerChats      ChatRoom[]         @relation("SellerChats")
+  sentMessages     ChatMessage[]      @relation("SentMessages")
+  userLeads        ConsultationLead[] @relation("UserLeads")
+  assignedLeads    ConsultationLead[] @relation("AssignedLeads")
+  buyerPayments    EscrowPayment[]    @relation("BuyerPayments")
+  sellerPayments   EscrowPayment[]    @relation("SellerPayments")
+  favorites        Favorite[]         @relation("UserFavorites")
+  notifications    Notification[]     @relation("UserNotifications")
+  reviewsWritten   DealerReview[]     @relation("ReviewsWritten")
+  reviewsReceived  DealerReview[]     @relation("ReviewsReceived")
+  reportsFiled     Report[]           @relation("ReportsFiled")
+  sellerPromotions Promotion[]        @relation("SellerPromotions")
 
   @@map("profiles")
 }
@@ -236,6 +249,10 @@ model Listing {
   // 상태
   isVerified Boolean @default(false) @map("is_verified")
 
+  // 프로모션 (노출 정렬용 비정규화 — 결제 확정 시 세팅, 만료 시 sweep으로 초기화)
+  promotionTier PromotionTier? @map("promotion_tier")
+  promotedUntil DateTime?      @map("promoted_until")
+
   // Inspection
   estimatedMarketPrice       Int?      @map("estimated_market_price")
   dealerNote                 String?   @map("dealer_note")
@@ -264,6 +281,7 @@ model Listing {
   escrowPayments EscrowPayment[]
   favorites      Favorite[]
   reviews        DealerReview[]
+  promotions     Promotion[]
 
   @@index([type, status])
   @@index([sellerId, status])
@@ -274,6 +292,7 @@ model Listing {
   @@index([status, brand, model])
   @@index([status, year(sort: Desc)])
   @@index([status, isFastTransfer, createdAt(sort: Desc)])
+  @@index([status, promotedUntil(sort: Desc)])
   @@map("listings")
 }
 
@@ -399,6 +418,31 @@ model EscrowPayment {
   @@index([sellerId])
   @@index([status, createdAt])
   @@map("escrow_payments")
+}
+
+// 매물 유료 프로모션 (판매자 → 플랫폼 광고 결제). 에스크로와 달리 buyer/분쟁 없음.
+model Promotion {
+  id           String          @id @default(uuid()) @db.Uuid
+  listingId    String          @map("listing_id") @db.Uuid
+  sellerId     String          @map("seller_id") @db.Uuid
+  tier         PromotionTier
+  durationDays Int             @map("duration_days")
+  amount       Int // 서버가 tier+기간으로 산정 (클라 금액 불신)
+  status       PromotionStatus @default(PENDING)
+  startsAt     DateTime?       @map("starts_at")
+  expiresAt    DateTime?       @map("expires_at")
+  pgOrderId    String?         @map("pg_order_id")
+  pgPaymentKey String?         @map("pg_payment_key")
+  paidAt       DateTime?       @map("paid_at")
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+
+  listing Listing @relation(fields: [listingId], references: [id])
+  seller  Profile @relation("SellerPromotions", fields: [sellerId], references: [id])
+
+  @@index([listingId])
+  @@index([status, expiresAt])
+  @@map("promotions")
 }
 
 model Favorite {

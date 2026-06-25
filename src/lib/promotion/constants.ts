@@ -23,6 +23,30 @@ export function getPromotionPrice(
   return PROMOTION_TIERS[tierId].prices[duration];
 }
 
+/**
+ * 클라이언트가 보낸 tier·기간을 검증하고 서버 기준 금액을 산정한다.
+ * 결제 금액은 절대 클라 입력을 믿지 않고 이 함수로만 정한다.
+ * 유효하지 않으면 null — 호출부(prepare API)가 400으로 거절한다.
+ */
+export function resolvePromotionAmount(
+  tier: string,
+  durationDays: number
+): {
+  tier: PromotionTierId;
+  durationDays: PromotionDuration;
+  amount: number;
+} | null {
+  if (!(tier in PROMOTION_TIERS)) return null;
+  if (durationDays !== 7 && durationDays !== 30) return null;
+  const tierId = tier as PromotionTierId;
+  const duration = durationDays as PromotionDuration;
+  return {
+    tier: tierId,
+    durationDays: duration,
+    amount: getPromotionPrice(tierId, duration),
+  };
+}
+
 export function buildOrderId(listingId: string): string {
   return `PROMO-${listingId}-${Date.now()}`;
 }
