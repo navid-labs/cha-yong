@@ -23,45 +23,48 @@ const QUICK_ENTRIES = [
   { label: "상담 지점", href: "/guide", image: marketingImages.leaseCar },
 ] as const;
 
-async function getRecommendedListings(): Promise<ListingCardData[]> {
-  const selectFields = {
-    id: true,
-    type: true,
-    brand: true,
-    model: true,
-    year: true,
-    trim: true,
-    mileage: true,
-    monthlyPayment: true,
-    initialCost: true,
-    remainingMonths: true,
-    isVerified: true,
-    accidentCount: true,
-    mileageVerified: true,
-    viewCount: true,
-    favoriteCount: true,
-    options: true,
-    images: { where: { isPrimary: true }, take: 1, select: { url: true } },
-  } as const;
+const LISTING_CARD_SELECT = {
+  id: true,
+  type: true,
+  brand: true,
+  model: true,
+  year: true,
+  trim: true,
+  mileage: true,
+  monthlyPayment: true,
+  initialCost: true,
+  remainingMonths: true,
+  isVerified: true,
+  accidentCount: true,
+  mileageVerified: true,
+  viewCount: true,
+  favoriteCount: true,
+  options: true,
+  images: { where: { isPrimary: true }, take: 1, select: { url: true } },
+} as const;
 
-  // Try verified+active first, fall back to newest active only if empty
-  let listings = await prisma.listing.findMany({
-    where: { status: "ACTIVE", isVerified: true },
-    orderBy: { createdAt: "desc" },
-    take: 8,
-    select: selectFields,
-  });
+type ListingCardRow = {
+  id: string;
+  type: ListingCardData["type"];
+  brand: string | null;
+  model: string | null;
+  year: number | null;
+  trim: string | null;
+  mileage: number | null;
+  monthlyPayment: number;
+  initialCost: number;
+  remainingMonths: number;
+  isVerified: boolean;
+  accidentCount: number | null;
+  mileageVerified: boolean;
+  viewCount: number;
+  favoriteCount: number;
+  options: string[];
+  images: { url: string }[];
+};
 
-  if (listings.length === 0) {
-    listings = await prisma.listing.findMany({
-      where: { status: "ACTIVE" },
-      orderBy: { createdAt: "desc" },
-      take: 8,
-      select: selectFields,
-    });
-  }
-
-  return listings.map((l) => ({
+function toListingCard(l: ListingCardRow): ListingCardData {
+  return {
     id: l.id,
     type: l.type,
     brand: l.brand,
@@ -79,7 +82,44 @@ async function getRecommendedListings(): Promise<ListingCardData[]> {
     favoriteCount: l.favoriteCount,
     options: l.options,
     primaryImage: l.images[0]?.url ?? null,
-  }));
+  };
+}
+
+async function getRecommendedListings(): Promise<ListingCardData[]> {
+  // Try verified+active first, fall back to newest active only if empty
+  let listings = await prisma.listing.findMany({
+    where: { status: "ACTIVE", isVerified: true },
+    orderBy: { createdAt: "desc" },
+    take: 8,
+    select: LISTING_CARD_SELECT,
+  });
+
+  if (listings.length === 0) {
+    listings = await prisma.listing.findMany({
+      where: { status: "ACTIVE" },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+      select: LISTING_CARD_SELECT,
+    });
+  }
+
+  return listings.map(toListingCard);
+}
+
+// HOME_FEATURED 프로모션이 활성(만료 전)인 매물만 홈 추천 구좌에 노출한다.
+async function getFeaturedListings(): Promise<ListingCardData[]> {
+  const listings = await prisma.listing.findMany({
+    where: {
+      status: "ACTIVE",
+      promotionTier: "HOME_FEATURED",
+      promotedUntil: { gt: new Date() },
+    },
+    orderBy: { promotedUntil: "desc" },
+    take: 4,
+    select: LISTING_CARD_SELECT,
+  });
+
+  return listings.map(toListingCard);
 }
 
 async function getNewListingCount(): Promise<number> {
@@ -105,8 +145,9 @@ async function getTopBrands(): Promise<string[]> {
 }
 
 export default async function HomePage() {
-  const [listings, newListingCount, topBrands] = await Promise.all([
+  const [listings, featured, newListingCount, topBrands] = await Promise.all([
     getRecommendedListings(),
+    getFeaturedListings(),
     getNewListingCount(),
     getTopBrands(),
   ]);
@@ -380,6 +421,27 @@ export default async function HomePage() {
       <section className="my-3 md:my-4">
         <LiveActivityFeed />
       </section>
+
+      {/* ── 추천 매물 (HOME_FEATURED 프로모션) ── */}
+      {featured.length > 0 && (
+        <section className="py-4 md:py-6" aria-label="추천 매물">
+          <div className="mb-3 flex items-center justify-between md:mb-4">
+            <div>
+              <h2 className="text-xl font-bold md:text-2xl" style={{ color: "var(--chayong-text)" }}>
+                추천 매물
+              </h2>
+              <p className="mt-0.5 text-xs md:text-sm" style={{ color: "var(--chayong-text-sub)" }}>
+                판매자가 추천 구좌로 노출 중인 매물입니다.
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {featured.map((listing, i) => (
+              <VehicleCard key={listing.id} listing={listing} priority={i === 0} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── 지금, 이 매물 어때요? ── */}
       <section id="cost-calculator" className="py-4 md:py-6">
