@@ -7,7 +7,7 @@ import { TrustStripe } from "@/features/home/trust-stripe";
 import { StoryCards } from "@/features/home/story-cards";
 import { HowItWorksTimeline } from "@/features/home/how-it-works-timeline";
 import { SellCtaBanner } from "@/features/home/sell-cta-banner";
-import { LiveActivityFeed } from "@/features/home/live-activity-feed";
+import { LiveActivityFeed, type LiveEvent } from "@/features/home/live-activity-feed";
 import { CostCalculatorHome } from "@/features/home/cost-calculator-home";
 import { CustomerStories } from "@/features/home/customer-stories";
 import { marketingImages } from "@/lib/marketing-images";
@@ -122,6 +122,25 @@ async function getFeaturedListings(): Promise<ListingCardData[]> {
   return listings.map(toListingCard);
 }
 
+// 실제 최근 등록 매물로 라이브 피드를 구성한다(공개 정보만, 조작 없음).
+async function getLiveEvents(): Promise<LiveEvent[]> {
+  const recent = await prisma.listing.findMany({
+    where: { status: "ACTIVE" },
+    orderBy: { createdAt: "desc" },
+    take: 6,
+    select: { id: true, brand: true, model: true },
+  });
+
+  return recent.map((l) => {
+    const name = [l.brand, l.model].filter(Boolean).join(" ") || "신규 매물";
+    return {
+      id: `l-${l.id}`,
+      text: `${name} 매물이 등록되었어요`,
+      type: "new-listing" as const,
+    };
+  });
+}
+
 async function getNewListingCount(): Promise<number> {
   const now = new Date();
   return prisma.listing.count({
@@ -145,12 +164,14 @@ async function getTopBrands(): Promise<string[]> {
 }
 
 export default async function HomePage() {
-  const [listings, featured, newListingCount, topBrands] = await Promise.all([
-    getRecommendedListings(),
-    getFeaturedListings(),
-    getNewListingCount(),
-    getTopBrands(),
-  ]);
+  const [listings, featured, liveEvents, newListingCount, topBrands] =
+    await Promise.all([
+      getRecommendedListings(),
+      getFeaturedListings(),
+      getLiveEvents(),
+      getNewListingCount(),
+      getTopBrands(),
+    ]);
 
   return (
     <div className="mx-auto max-w-7xl px-4">
@@ -418,9 +439,11 @@ export default async function HomePage() {
       </section>
 
       {/* ── Live Activity Feed ── */}
-      <section className="my-3 md:my-4">
-        <LiveActivityFeed />
-      </section>
+      {liveEvents.length > 0 && (
+        <section className="my-3 md:my-4">
+          <LiveActivityFeed events={liveEvents} />
+        </section>
+      )}
 
       {/* ── 추천 매물 (HOME_FEATURED 프로모션) ── */}
       {featured.length > 0 && (
