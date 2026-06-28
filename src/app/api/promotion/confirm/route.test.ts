@@ -23,6 +23,10 @@ vi.mock("@/lib/api/auth-guard", () => ({
 vi.mock("@/lib/payment/toss", () => ({
   verifyTossPayment: (...a: unknown[]) => verifyTossPayment(...a),
 }));
+const sendNotification = vi.fn();
+vi.mock("@/lib/notifications/send", () => ({
+  sendNotification: (...a: unknown[]) => sendNotification(...a),
+}));
 
 import { POST } from "./route";
 
@@ -55,6 +59,7 @@ describe("POST /api/promotion/confirm", () => {
     verifyTossPayment.mockReset();
     promotionUpdate.mockResolvedValue({ id: "promo1", status: "ACTIVE" });
     listingUpdateMany.mockResolvedValue({ count: 1 });
+    sendNotification.mockClear();
   });
 
   afterEach(() => {
@@ -81,6 +86,11 @@ describe("POST /api/promotion/confirm", () => {
     };
     expect(data.data.promotedUntil.getTime()).toBeGreaterThan(Date.now());
     expect(verifyTossPayment).not.toHaveBeenCalled();
+    expect(sendNotification).toHaveBeenCalledOnce();
+    expect(sendNotification.mock.calls[0][0]).toMatchObject({
+      userId: "s1",
+      type: "PROMOTION_ACTIVATED",
+    });
   });
 
   it("production (TOSS_SECRET set) WITHOUT pgPaymentKey is rejected and stays PENDING", async () => {

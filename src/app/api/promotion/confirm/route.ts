@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { NotificationType } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { requireActiveProfile, isAuthError } from "@/lib/api/auth-guard";
 import { verifyTossPayment } from "@/lib/payment/toss";
+import { sendNotification } from "@/lib/notifications/send";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -98,6 +100,19 @@ export async function POST(request: NextRequest) {
 
       return promotion;
     });
+
+    // 알림은 비치명적 — 발송 실패가 결제 확정을 되돌리지 않는다.
+    try {
+      await sendNotification({
+        userId: existing.sellerId,
+        type: NotificationType.PROMOTION_ACTIVATED,
+        title: "프로모션이 시작되었습니다",
+        message: "매물이 추천 노출되고 있어요.",
+        linkUrl: "/my/listings",
+      });
+    } catch (notifyError) {
+      console.error("promotion activation notify failed:", notifyError);
+    }
 
     return NextResponse.json(updated);
   } catch (error) {
