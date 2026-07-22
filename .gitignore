@@ -50,6 +50,8 @@ next-env.d.ts
 .gemini/
 .omc/
 .claude/
+.superpowers/
+.firecrawl/
 
 # Generated API client (regenerate with `bun run api:generate`)
 src/lib/api/generated/
