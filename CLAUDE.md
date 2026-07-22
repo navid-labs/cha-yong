@@ -189,6 +189,20 @@ Key routing rules:
 - Save progress, checkpoint, resume → invoke checkpoint
 - Code quality, health check → invoke health
 
+## Agent skills
+
+### Issue tracker
+
+이슈는 GitHub Issues(`navid-labs/cha-yong`)에 `gh` CLI로 관리. 외부 PR은 트리아지 대상 아님(issues only). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+표준 5개 역할명을 그대로 사용 — `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+단일 컨텍스트 — 루트 `CONTEXT.md` + `docs/adr/`. 파일 부재 시 조용히 진행(lazy 생성). See `docs/agents/domain.md`.
+
 ## Hybrid Harness (Codex 통합)
 
 차용은 Hybrid Harness 활성. 작업 시작 전 **반드시** `.harness/routing.md`를 먼저 읽어 Owner/Reviewer를 확인.
