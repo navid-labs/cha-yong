@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Calculator, MapPin, Search, ShieldCheck, Tag } from "lucide-react";
+import Image from "next/image";
 import { prisma } from "@/lib/db/prisma";
 import { VehicleCard } from "@/components/ui/vehicle-card";
 import { SearchHub } from "@/features/home/search-hub";
@@ -7,20 +7,20 @@ import { TrustStripe } from "@/features/home/trust-stripe";
 import { StoryCards } from "@/features/home/story-cards";
 import { HowItWorksTimeline } from "@/features/home/how-it-works-timeline";
 import { SellCtaBanner } from "@/features/home/sell-cta-banner";
-import { RibbonMotif } from "@/components/ui/ribbon-motif";
 import { LiveActivityFeed } from "@/features/home/live-activity-feed";
 import { CostCalculatorHome } from "@/features/home/cost-calculator-home";
 import { CustomerStories } from "@/features/home/customer-stories";
+import { marketingImages } from "@/lib/marketing-images";
 import type { ListingCardData } from "@/types";
 
 export const dynamic = "force-dynamic";
 
 const QUICK_ENTRIES = [
-  { label: "내 차 사기", href: "/list", icon: Search },
-  { label: "내 차 팔기", href: "/sell", icon: Tag },
-  { label: "월납입 계산", href: "#cost-calculator", icon: Calculator },
-  { label: "안심거래", href: "#trust-flow", icon: ShieldCheck },
-  { label: "상담 지점", href: "/guide", icon: MapPin },
+  { label: "내 차 사기", href: "/list", image: marketingImages.heroBmw },
+  { label: "내 차 팔기", href: "/sell", image: marketingImages.heroGenesis },
+  { label: "월납입 계산", href: "#cost-calculator", image: marketingImages.heroGrandeur },
+  { label: "안심거래", href: "#trust-flow", image: marketingImages.heroHyundai },
+  { label: "상담 지점", href: "/guide", image: marketingImages.leaseCar },
 ] as const;
 
 async function getRecommendedListings(): Promise<ListingCardData[]> {
@@ -115,13 +115,11 @@ export default async function HomePage() {
     <div className="mx-auto max-w-7xl px-4">
       {/* ── Hero ── */}
       <section
-        className="relative overflow-hidden rounded-2xl px-5 py-10 md:px-10 md:py-14"
-        style={{ background: "var(--chayong-gradient-hero)" }}
+        className="relative overflow-hidden rounded-2xl bg-[var(--chayong-bg)] px-5 py-10 md:px-10 md:py-14"
+        style={{ border: "1px solid rgba(27, 89, 199, 0.12)" }}
       >
-        <div className="chayong-ribbon-bg">
-          <RibbonMotif variant="hero" className="h-full w-full" />
-        </div>
-        <div className="relative z-10 grid grid-cols-1 items-center gap-7 lg:grid-cols-[1.1fr_0.9fr] lg:gap-10">
+        <div className="absolute inset-0 bg-[linear-gradient(115deg,rgba(255,255,255,0.96)_0%,rgba(240,246,255,0.78)_42%,rgba(255,255,255,0.2)_100%)]" />
+        <div className="relative z-10 grid grid-cols-1 items-center gap-7 lg:grid-cols-[0.92fr_1.08fr] lg:gap-10">
           {/* Left: headline + entry */}
           <div>
             <div>
@@ -190,29 +188,28 @@ export default async function HomePage() {
             </div>
           </div>
 
-          {/* Right: compact condition summary */}
-          <div
-            className="rounded-2xl border p-4 chayong-shadow-lg md:p-5"
-            style={{ backgroundColor: "rgba(255,255,255,0.82)", borderColor: "rgba(255,255,255,0.72)" }}
-          >
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold" style={{ color: "var(--chayong-primary)" }}>
-                  빠른 조건 예시
-                </p>
-                <h2 className="mt-1 text-xl font-bold md:text-2xl" style={{ color: "var(--chayong-text)" }}>
-                  월 부담부터 확인
-                </h2>
-              </div>
-              <span
-                className="rounded-full px-3 py-1 text-xs font-semibold text-white"
-                style={{ backgroundColor: "var(--chayong-primary)" }}
-              >
-                차용
-              </span>
+          {/* Right: vehicle-first hero media */}
+          <div className="relative min-h-[480px] overflow-hidden rounded-2xl border bg-white chayong-shadow-lg sm:min-h-[420px]" style={{ borderColor: "rgba(27, 89, 199, 0.14)" }}>
+            <Image
+              src={marketingImages.heroGrandeur}
+              alt="차용 승계 매물 차량"
+              fill
+              className="object-cover"
+              sizes="(max-width: 1024px) 100vw, 55vw"
+              priority
+            />
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.08)_0%,rgba(15,23,42,0.18)_68%,rgba(15,23,42,0.48)_100%)]" />
+
+            <div className="absolute left-4 top-4 rounded-2xl border bg-white/90 p-4 shadow-sm backdrop-blur md:left-5 md:top-5" style={{ borderColor: "rgba(255,255,255,0.72)" }}>
+              <p className="text-xs font-semibold" style={{ color: "var(--chayong-primary)" }}>
+                빠른 조건 예시
+              </p>
+              <h2 className="mt-1 text-xl font-bold md:text-2xl" style={{ color: "var(--chayong-text)" }}>
+                월 부담부터 확인
+              </h2>
             </div>
 
-            <div className="mt-5 grid gap-3">
+            <div className="absolute inset-x-4 bottom-4 grid gap-2 rounded-2xl border bg-white/92 p-3 shadow-sm backdrop-blur md:inset-x-5 md:bottom-5 md:grid-cols-3 md:p-4" style={{ borderColor: "rgba(255,255,255,0.72)" }}>
               {[
                 { label: "월 납입", value: "58만원", helper: "예상 월 부담" },
                 { label: "초기 비용", value: "140만원", helper: "선납/보증금 포함" },
@@ -220,35 +217,18 @@ export default async function HomePage() {
               ].map((item) => (
                 <div
                   key={item.label}
-                  className="grid grid-cols-[5rem_1fr] items-center gap-3 rounded-xl border px-4 py-3 sm:grid-cols-[5.5rem_1fr_auto]"
-                  style={{ backgroundColor: "var(--chayong-bg)", borderColor: "var(--chayong-border)" }}
+                  className="min-w-0 rounded-xl border bg-white/80 px-3 py-2"
+                  style={{ borderColor: "var(--chayong-border)" }}
                 >
                   <div className="text-xs font-medium" style={{ color: "var(--chayong-text-caption)" }}>
                     {item.label}
                   </div>
-                  <div className="text-right text-xl font-bold tabular-nums sm:text-left" style={{ color: "var(--chayong-text)" }}>
+                  <div className="mt-1 text-xl font-bold tabular-nums" style={{ color: "var(--chayong-text)" }}>
                     {item.value}
                   </div>
-                  <div className="col-span-2 text-xs sm:col-span-1 sm:text-right" style={{ color: "var(--chayong-text-sub)" }}>
+                  <div className="mt-0.5 text-xs" style={{ color: "var(--chayong-text-sub)" }}>
                     {item.helper}
                   </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-4 grid gap-2 sm:grid-cols-3">
-              {[
-                { label: "검수", value: "조건 확인" },
-                { label: "상담", value: "거래 전 안내" },
-                { label: "보호", value: "에스크로" },
-              ].map((item) => (
-                <div key={item.label} className="rounded-xl bg-[var(--chayong-surface)] px-3 py-2">
-                  <p className="text-xs" style={{ color: "var(--chayong-text-caption)" }}>
-                    {item.label}
-                  </p>
-                  <p className="mt-0.5 text-sm font-semibold" style={{ color: "var(--chayong-text)" }}>
-                    {item.value}
-                  </p>
                 </div>
               ))}
             </div>
@@ -363,14 +343,20 @@ export default async function HomePage() {
       {/* ── Quick Entries ── */}
       <section className="py-4 md:py-6" aria-label="빠른 시작">
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-          {QUICK_ENTRIES.map(({ label, href, icon: Icon }) => (
+          {QUICK_ENTRIES.map(({ label, href, image }) => (
             <Link
               key={label}
               href={href}
-              className="group flex min-h-[104px] flex-col items-center justify-center gap-3 rounded-2xl border border-transparent px-3 py-4 text-center transition-colors hover:border-[var(--chayong-divider)] hover:bg-[var(--chayong-surface)]"
+              className="group flex min-h-[124px] flex-col items-center justify-center gap-3 rounded-2xl border border-transparent px-3 py-4 text-center transition-colors hover:border-[var(--chayong-divider)] hover:bg-[var(--chayong-surface)]"
             >
-              <span className="chayong-icon-well h-14 w-14 rounded-full bg-[var(--chayong-surface)] text-[var(--chayong-text)] transition-colors group-hover:bg-[var(--chayong-primary-light)] group-hover:text-[var(--chayong-primary)]">
-                <Icon size={24} strokeWidth={1.8} aria-hidden="true" />
+              <span className="relative h-16 w-20 overflow-hidden rounded-xl bg-[var(--chayong-surface)] shadow-sm transition-transform group-hover:-translate-y-0.5">
+                <Image
+                  src={image}
+                  alt=""
+                  fill
+                  className="object-cover"
+                  sizes="80px"
+                />
               </span>
               <span className="whitespace-nowrap text-sm font-bold text-[var(--chayong-text)]">
                 {label}

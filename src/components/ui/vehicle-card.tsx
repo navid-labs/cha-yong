@@ -7,6 +7,7 @@ import { Eye, Heart, GitCompareArrows } from "lucide-react";
 import type { ListingCardData } from "@/types";
 import { PriceDisplay } from "./price-display";
 import { TrustBadge } from "./trust-badge";
+import { getVehicleFallbackImage } from "@/lib/marketing-images";
 import { useVehicleInteractionStore } from "@/lib/stores/vehicle-interaction-store";
 import type { VehicleSummary } from "@/lib/stores/vehicle-interaction-store";
 
@@ -77,6 +78,7 @@ export function VehicleCard({ listing, priority = false, showCompare = false }: 
   const remainingCount = options.length - MAX_CHIPS;
 
   const vehicleName = `${brand} ${model}`;
+  const cardImage = primaryImage ?? getVehicleFallbackImage(brand, model);
   const subtitle = [year && `${year}년`, trim, mileage && `${mileage.toLocaleString("ko-KR")}km`]
     .filter(Boolean)
     .join(" · ");
@@ -91,7 +93,7 @@ export function VehicleCard({ listing, priority = false, showCompare = false }: 
       year: year ?? 0,
       mileage: mileage ?? 0,
       price: monthlyPayment,
-      thumbnailUrl: primaryImage,
+      thumbnailUrl: cardImage,
     };
     toggleComparison(summary);
   }
@@ -103,22 +105,14 @@ export function VehicleCard({ listing, priority = false, showCompare = false }: 
       style={{ borderColor: "var(--chayong-border)" }}
     >
       <div className="relative aspect-[4/3] w-full overflow-hidden bg-[var(--chayong-surface)]">
-        {primaryImage ? (
-          <Image
-            src={primaryImage}
-            alt={vehicleName}
-            fill
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            priority={priority}
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <span className="text-sm" style={{ color: "var(--chayong-text-caption)" }}>
-              이미지 없음
-            </span>
-          </div>
-        )}
+        <Image
+          src={cardImage}
+          alt={vehicleName}
+          fill
+          className="object-cover transition-transform duration-300 group-hover:scale-105"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          priority={priority}
+        />
 
         <div className="absolute left-2 top-2 flex max-w-[calc(100%-5.5rem)] flex-wrap gap-1.5">
           <span className="inline-flex items-center rounded-full bg-[var(--chayong-primary-light)] px-2 py-0.5 text-[11px] font-semibold text-[var(--chayong-primary)] shadow-sm">
