@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { EscrowVerifyForm } from "@/features/admin/components/escrow-verify-form";
 
 type EscrowRow = {
   id: string;
@@ -8,6 +10,7 @@ type EscrowRow = {
   totalAmount: number;
   paidAt: string | null;
   createdAt: string;
+  transferProofKey: string | null;
   listing: { id: string; brand: string | null; model: string | null };
   buyer: { id: string; name: string | null; email: string };
   seller: { id: string; name: string | null; email: string };
@@ -38,6 +41,7 @@ async function updateEscrow(id: string, status: string) {
 }
 
 export function EscrowAdminTable({ escrows }: { escrows: EscrowRow[] }) {
+  const router = useRouter();
   const [rows, setRows] = useState(escrows);
 
   const handleAction = async (id: string, status: string) => {
@@ -154,17 +158,12 @@ export function EscrowAdminTable({ escrows }: { escrows: EscrowRow[] }) {
                   {/* 액션 */}
                   <td className="px-4 py-3">
                     {row.status === "PAID" && (
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleAction(row.id, "RELEASED")}
-                          className="text-xs px-2.5 py-1 rounded-lg font-medium transition-colors"
-                          style={{
-                            backgroundColor: "#ECFDF5",
-                            color: "var(--chayong-success)",
-                          }}
-                        >
-                          지급 처리
-                        </button>
+                      <div className="flex items-center gap-2">
+                        <EscrowVerifyForm
+                          escrowId={row.id}
+                          transferProofKey={row.transferProofKey}
+                          onDone={() => router.refresh()}
+                        />
                         <button
                           onClick={() => handleAction(row.id, "REFUNDED")}
                           className="text-xs px-2.5 py-1 rounded-lg font-medium transition-colors"

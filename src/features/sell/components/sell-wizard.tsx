@@ -36,6 +36,7 @@ interface SellWizardProps {
 export function SellWizard({ initialVehicle, manualEntry = false }: SellWizardProps) {
   const router = useRouter();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const hasInitialVehicle = Boolean(
     initialVehicle?.plate ||
       initialVehicle?.brand ||
@@ -55,7 +56,9 @@ export function SellWizard({ initialVehicle, manualEntry = false }: SellWizardPr
   });
 
   async function handleSubmit() {
+    if (isSubmitting) return;
     setSubmitError(null);
+    setIsSubmitting(true);
 
     try {
       const res = await fetch("/api/listings", {
@@ -71,11 +74,13 @@ export function SellWizard({ initialVehicle, manualEntry = false }: SellWizardPr
 
       const listing = await res.json();
 
-      if (form.imageUrls.length > 0) {
+      // 매물 생성 후 수집한 사진을 Supabase Storage로 업로드하고 URL을 등록한다.
+      const imageUrls = await uploadListingPhotos(form.photos);
+      if (imageUrls.length > 0) {
         await fetch(`/api/listings/${listing.id}/images`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ urls: form.imageUrls }),
+          body: JSON.stringify({ urls: imageUrls }),
         });
       }
 
@@ -83,6 +88,7 @@ export function SellWizard({ initialVehicle, manualEntry = false }: SellWizardPr
     } catch (err) {
       console.error(err);
       setSubmitError(err instanceof Error ? err.message : "등록에 실패했습니다.");
+      setIsSubmitting(false);
     }
   }
 
@@ -474,6 +480,7 @@ export function SellWizard({ initialVehicle, manualEntry = false }: SellWizardPr
             canPrev={step > 0}
             canNext={canNext()}
             isLast={step === TOTAL_STEPS - 1}
+            isSubmitting={isSubmitting}
           />
         </div>
 
@@ -529,6 +536,26 @@ export function buildListingPayload(form: WizardForm) {
     terminationFee: 0,
     mileageLimit: null,
   };
+}
+
+// 슬롯 순서를 보존(정면=대표사진)하며 사진을 업로드한다. 일부 실패는 건너뛰는 best-effort.
+export async function uploadListingPhotos(
+  photos: (File | null)[]
+): Promise<string[]> {
+  const files = photos.filter((f): f is File => f !== null);
+  const results = await Promise.allSettled(
+    files.map(async (file) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      if (!res.ok) throw new Error("upload failed");
+      const data = (await res.json()) as { url: string };
+      return data.url;
+    })
+  );
+  return results
+    .filter((r): r is PromiseFulfilledResult<string> => r.status === "fulfilled")
+    .map((r) => r.value);
 }
 
 function getListingErrorMessage(data: unknown, status: number) {
@@ -590,12 +617,14 @@ function StickyFooter({
   canPrev,
   canNext,
   isLast,
+  isSubmitting = false,
 }: {
   onPrev: () => void;
   onNext: () => void;
   canPrev: boolean;
   canNext: boolean;
   isLast: boolean;
+  isSubmitting?: boolean;
 }) {
   return (
     <div className="fixed inset-x-0 bottom-16 z-40 border-t bg-white p-3 md:static md:inset-auto md:bottom-auto md:border-t-0 md:px-0 md:pt-6">
@@ -611,12 +640,12 @@ function StickyFooter({
         </button>
         <button
           type="button"
-          disabled={!canNext}
+          disabled={!canNext || isSubmitting}
           onClick={onNext}
           className="h-12 flex-1 rounded-xl font-semibold text-white disabled:opacity-50"
           style={{ backgroundColor: "var(--chayong-primary)" }}
         >
-          {isLast ? "등록하기" : "다음"}
+          {isLast ? (isSubmitting ? "등록 중..." : "등록하기") : "다음"}
         </button>
       </div>
     </div>

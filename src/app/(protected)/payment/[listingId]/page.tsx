@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db/prisma";
+import { getProfile } from "@/lib/supabase/auth";
 import { EscrowCheckout } from "@/features/payment/components/escrow-checkout";
 import { ChevronLeft } from "lucide-react";
 
@@ -16,11 +17,11 @@ export const metadata: Metadata = {
   description: "에스크로 방식으로 안전하게 결제하세요.",
 };
 
-// TODO: Replace with real auth once Supabase session is wired up
-const MOCK_BUYER_ID = "00000000-0000-0000-0000-000000000001";
-
 export default async function PaymentPage({ params }: PageProps) {
   const { listingId } = await params;
+
+  const profile = await getProfile();
+  if (!profile) redirect("/login");
 
   const listing = await prisma.listing.findUnique({
     where: { id: listingId },
@@ -52,7 +53,7 @@ export default async function PaymentPage({ params }: PageProps) {
         }}
       >
         <Link
-          href={`/listings/${listingId}`}
+          href={`/detail/${listingId}`}
           className="flex h-9 w-9 items-center justify-center rounded-full transition-colors"
           style={{ color: "var(--chayong-text)" }}
           aria-label="뒤로가기"
@@ -79,7 +80,7 @@ export default async function PaymentPage({ params }: PageProps) {
             initialCost: listing.initialCost ?? 0,
             transferFee: listing.transferFee ?? 0,
           }}
-          buyerId={MOCK_BUYER_ID}
+          buyerId={profile.id}
         />
       </div>
     </div>

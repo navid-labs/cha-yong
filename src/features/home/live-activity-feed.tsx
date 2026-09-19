@@ -15,20 +15,13 @@ const ICONS = {
   consultation: MessageCircle,
 } as const;
 
-const DEFAULT_EVENTS: LiveEvent[] = [
-  { id: "d1", text: "방금 BMW X3 매물이 등록되었어요", type: "new-listing" },
-  { id: "d2", text: "에스크로 결제가 완료되었어요 (서울·K5)", type: "escrow" },
-  { id: "d3", text: "잔여 14개월 매물이 상담 완료되었어요", type: "consultation" },
-  { id: "d4", text: "제네시스 G80 승계 거래가 완료되었어요", type: "escrow" },
-  { id: "d5", text: "신규 중고 렌트 3대가 큐레이션되었어요", type: "new-listing" },
-];
-
 interface Props {
   events?: LiveEvent[];
   intervalMs?: number;
 }
 
-export function LiveActivityFeed({ events = DEFAULT_EVENTS, intervalMs = 5000 }: Props) {
+// 실제 최근 활동만 표시한다. 빈 배열이면 렌더하지 않는다(가짜 활동 표시 금지).
+export function LiveActivityFeed({ events = [], intervalMs = 5000 }: Props) {
   const [index, setIndex] = useState(0);
 
   useEffect(() => {

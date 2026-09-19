@@ -20,6 +20,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Project artifacts (not source):
+    "coverage/**",
+    ".firecrawl/**",
   ]),
 ]);
 

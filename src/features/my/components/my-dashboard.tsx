@@ -2,18 +2,18 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { VehicleCard } from "@/components/ui/vehicle-card";
 import { PendingReviewsSection } from "@/features/my/components/pending-reviews-section";
 import { MyListingCard } from "./my-listing-card";
 import type { Listing, ListingCardData } from "@/types";
 import {
   User,
-  Settings,
   ChevronRight,
   MessageCircle,
   Package,
   Heart,
-  ClipboardList,
   History,
   HeadphonesIcon,
   LogOut,
@@ -46,20 +46,23 @@ const ROLE_LABEL: Record<string, string> = {
   ADMIN: "관리자",
 };
 
-const MENU_ITEMS = [
-  { icon: Package, label: "내 매물 관리", href: "#" },
-  { icon: Heart, label: "찜한 매물", href: "#" },
-  { icon: MessageCircle, label: "채팅 내역", href: "#" },
-  { icon: History, label: "거래 내역", href: "#" },
-  { icon: ClipboardList, label: "계정 설정", href: "#" },
-  { icon: HeadphonesIcon, label: "고객센터", href: "#" },
-  { icon: LogOut, label: "로그아웃", href: "#" },
+const MENU_LINKS = [
+  { icon: MessageCircle, label: "채팅 내역", href: "/chat" },
+  { icon: HeadphonesIcon, label: "고객센터", href: "/faq" },
 ] as const;
 
 export function MyDashboard({ profile, myListings, favorites: initialFavorites = [] }: MyDashboardProps) {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("내 매물");
   const [favorites, setFavorites] = useState<ListingCardData[]>(initialFavorites);
   const [favLoading, setFavLoading] = useState(false);
+
+  async function handleSignOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/");
+    router.refresh();
+  }
 
   async function loadFavorites() {
     if (favLoading) return;
@@ -115,17 +118,6 @@ export function MyDashboard({ profile, myListings, favorites: initialFavorites =
             </span>
           </div>
         </div>
-        <Link
-          href="#"
-          className="flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors"
-          style={{
-            borderColor: "var(--chayong-border)",
-            color: "var(--chayong-text-sub)",
-          }}
-        >
-          <Settings size={13} />
-          설정
-        </Link>
       </div>
 
       {/* Stats row */}
@@ -265,27 +257,19 @@ export function MyDashboard({ profile, myListings, favorites: initialFavorites =
         className="mt-8 overflow-hidden rounded-2xl border"
         style={{ borderColor: "var(--chayong-border)" }}
       >
-        {MENU_ITEMS.map(({ icon: Icon, label, href }, index) => (
+        {MENU_LINKS.map(({ icon: Icon, label, href }) => (
           <Link
             key={label}
             href={href}
             className="flex items-center justify-between px-4 py-4 transition-colors"
             style={{
-              borderBottom:
-                index < MENU_ITEMS.length - 1
-                  ? "1px solid var(--chayong-divider)"
-                  : "none",
+              borderBottom: "1px solid var(--chayong-divider)",
               backgroundColor: "var(--chayong-bg)",
-              color: label === "로그아웃" ? "#dc2626" : "var(--chayong-text)",
+              color: "var(--chayong-text)",
             }}
           >
             <div className="flex items-center gap-3">
-              <Icon
-                size={18}
-                style={{
-                  color: label === "로그아웃" ? "#dc2626" : "var(--chayong-text-sub)",
-                }}
-              />
+              <Icon size={18} style={{ color: "var(--chayong-text-sub)" }} />
               <span className="text-sm font-medium">{label}</span>
             </div>
             <ChevronRight
@@ -294,6 +278,21 @@ export function MyDashboard({ profile, myListings, favorites: initialFavorites =
             />
           </Link>
         ))}
+        <button
+          type="button"
+          onClick={handleSignOut}
+          className="flex w-full items-center justify-between px-4 py-4 transition-colors"
+          style={{ backgroundColor: "var(--chayong-bg)", color: "#dc2626" }}
+        >
+          <div className="flex items-center gap-3">
+            <LogOut size={18} style={{ color: "#dc2626" }} />
+            <span className="text-sm font-medium">로그아웃</span>
+          </div>
+          <ChevronRight
+            size={16}
+            style={{ color: "var(--chayong-text-caption)" }}
+          />
+        </button>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getSession } from "@/lib/supabase/auth";
+import { getUser } from "@/lib/supabase/auth";
 import { SellEntry } from "@/features/sell/components/sell-entry";
 
 export const metadata: Metadata = {
@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 };
 
 export default async function SellPage() {
-  const session = await getSession();
+  const user = await getUser();
 
   return (
     <div className="bg-[var(--chayong-bg)]">
@@ -54,7 +54,7 @@ export default async function SellPage() {
           </div>
         </section>
 
-        <SellEntry isAuthenticated={Boolean(session)} />
+        <SellEntry isAuthenticated={Boolean(user)} />
       </div>
     </div>
   );

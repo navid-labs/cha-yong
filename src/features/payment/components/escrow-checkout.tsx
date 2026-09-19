@@ -77,14 +77,18 @@ export function EscrowCheckout({ listing, buyerId }: EscrowCheckoutProps) {
       const TossPayments = (window as any).TossPayments;
 
       if (clientKey && TossPayments) {
-        // Real Toss Payments flow
+        // 실제 토스페이먼츠 결제 (v2 standard SDK).
+        // 성공 시 Toss가 successUrl로 paymentKey·orderId·amount를 붙여 GET 리다이렉트하고,
+        // /payment/success 페이지가 서버 승인(confirm)을 호출한다.
         const tossPayments = TossPayments(clientKey);
-        await tossPayments.requestPayment("카드", {
-          amount: totalAmount,
+        const tossPayment = tossPayments.payment({ customerKey: buyerId });
+        await tossPayment.requestPayment({
+          method: "CARD",
+          amount: { currency: "KRW", value: totalAmount },
           orderId: payment.id,
           orderName: `${vehicleLabel(listing)} 가계약금`,
           customerName: buyerId,
-          successUrl: `${window.location.origin}/api/payment/confirm?paymentId=${payment.id}`,
+          successUrl: `${window.location.origin}/payment/success`,
           failUrl: `${window.location.origin}/payment/fail`,
         });
       } else {

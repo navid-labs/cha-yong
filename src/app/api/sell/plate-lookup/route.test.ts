@@ -11,18 +11,14 @@ function req(body: unknown) {
 }
 
 describe("POST /api/sell/plate-lookup", () => {
-  it("returns deterministic vehicle for valid plate", async () => {
+  it("returns 503 (not available) for a valid plate instead of fabricating a vehicle", async () => {
     const res = await POST(req({ plate: "12가3456" }));
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(503);
     const json = await res.json();
-    expect(json).toMatchObject({
-      plate: "12가3456",
-      brand: expect.any(String),
-      model: expect.any(String),
-      year: expect.any(Number),
-      fuel: expect.stringMatching(/GASOLINE|DIESEL|HYBRID|EV/),
-      displacement: expect.any(Number),
-    });
+    expect(json).toMatchObject({ error: expect.any(String) });
+    // 조작된 차량 정보를 반환하지 않는다
+    expect(json).not.toHaveProperty("brand");
+    expect(json).not.toHaveProperty("model");
   });
 
   it("rejects invalid plate format", async () => {
